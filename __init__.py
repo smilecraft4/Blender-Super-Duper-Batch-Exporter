@@ -275,6 +275,55 @@ class EXPORT_MESH_OT_batch(Operator):
                 if context.selected_objects:
                     self.export_selection(col.name, context, base_dir)
 
+        elif settings.mode == 'COLLECTION_SUBDIRECTORIES':
+            for obj in objects:
+                if not obj.type in settings.object_types:
+                    continue
+
+                # Modify base_dir to add collection, creating directory if necessary
+                sCollection = obj.users_collection[0].name
+                if sCollection != "Scene Collection":
+                  collection_dir = os.path.join(base_dir, sCollection)
+                  if not os.path.exists(collection_dir):
+                    try:
+                      os.makedirs(collection_dir)
+                      print(f"Directory created: {collection_dir}")
+                    except OSError as e:
+                      print(f"Error creating directory {collection_dir}: {e}")
+                else:
+                    collection_dir = base_dir
+
+                bpy.ops.object.select_all(action='DESELECT')
+                obj.select_set(True)
+                self.export_selection(obj.name, context, collection_dir)
+
+        elif settings.mode == 'COLLECTION_SUBDIR_PARENTS':
+            for obj in objects:
+                if obj.parent:  # if it has a parent, skip it for now, it'll be exported when we get to its parent
+                    continue
+
+                bpy.ops.object.select_all(action='DESELECT')
+                if obj.type in settings.object_types:
+                    obj.select_set(True)
+
+                    # Modify base_dir to add collection, creating directory if necessary
+                    sCollection = obj.users_collection[0].name
+                    if sCollection != "Scene Collection":
+                      collection_dir = os.path.join(base_dir, sCollection)
+
+                      if not os.path.exists(collection_dir):
+                        try:
+                          os.makedirs(collection_dir)
+                          print(f"Directory created: {collection_dir}")
+                        except OSError as e:
+                          print(f"Error creating directory {collection_dir}: {e}")
+                    else:
+                        collection_dir = base_dir
+
+                self.select_children_recursive(obj, context,)
+                if context.selected_objects:
+                    self.export_selection(obj.name, context, collection_dir)
+
         # Return selection to how it was
         bpy.ops.object.select_all(action='DESELECT')
         for obj in selection:
@@ -464,6 +513,10 @@ class BatchExportSettings(PropertyGroup):
              "Same as 'Objects', but objects that are parents have their\nchildren exported with them instead of by themselves", 2),
             ("COLLECTIONS", "Collections",
              "Each collection is exported into its own file", 3),
+            ("COLLECTION_SUBDIRECTORIES", "Collection Sub-directories",
+             "Objects are exported inside sub-directories according to their parent collection", 4),
+            ("COLLECTION_SUBDIR_PARENTS", "Collection Sub-directories By Parent",
+             "Same as 'Collection Sub-directories', but objects that are\nparents have their children exported with them instead of by themselves", 5)
         ],
         default="OBJECT_PARENTS",
     )
