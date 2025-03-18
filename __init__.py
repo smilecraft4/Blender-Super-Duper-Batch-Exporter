@@ -513,9 +513,9 @@ class BatchExportSettings(PropertyGroup):
              "Same as 'Objects', but objects that are parents have their\nchildren exported with them instead of by themselves", 2),
             ("COLLECTIONS", "Collections",
              "Each collection is exported into its own file", 3),
-            ("COLLECTION_SUBDIRECTORIES", "Collection Sub-directories",
+            ("COLLECTION_SUBDIRECTORIES", "Collection Sub-Directories",
              "Objects are exported inside sub-directories according to their parent collection", 4),
-            ("COLLECTION_SUBDIR_PARENTS", "Collection Sub-directories By Parent",
+            ("COLLECTION_SUBDIR_PARENTS", "Collection Sub-Directories By Parent",
              "Same as 'Collection Sub-directories', but objects that are\nparents have their children exported with them instead of by themselves", 5)
         ],
         default="OBJECT_PARENTS",
