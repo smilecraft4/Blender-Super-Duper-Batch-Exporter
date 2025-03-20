@@ -324,6 +324,19 @@ class EXPORT_MESH_OT_batch(Operator):
                 if context.selected_objects:
                     self.export_selection(obj.name, context, collection_dir)
 
+        elif settings.mode == 'SCENE':
+            prefix = settings.prefix
+            suffix = settings.suffix
+            
+            filename = ''
+            if not prefix and not suffix:
+                filename = bpy.path.basename(bpy.context.blend_data.filepath).split('.')[0]
+            
+            bpy.ops.object.select_all(action='DESELECT')
+            for obj in objects:
+                obj.select_set(True)
+            self.export_selection(filename, context, base_dir)
+
         # Return selection to how it was
         bpy.ops.object.select_all(action='DESELECT')
         for obj in selection:
@@ -516,7 +529,8 @@ class BatchExportSettings(PropertyGroup):
             ("COLLECTION_SUBDIRECTORIES", "Collection Sub-Directories",
              "Objects are exported inside sub-directories according to their parent collection", 4),
             ("COLLECTION_SUBDIR_PARENTS", "Collection Sub-Directories By Parent",
-             "Same as 'Collection Sub-directories', but objects that are\nparents have their children exported with them instead of by themselves", 5)
+             "Same as 'Collection Sub-directories', but objects that are\nparents have their children exported with them instead of by themselves", 5),
+            ("SCENE", "Scene", "Export the scene into one file\nUse prefix or suffix for filename, else .blend file name is used.", 6),
         ],
         default="OBJECT_PARENTS",
     )
