@@ -5,7 +5,7 @@ import os
 
 bl_info = {
     "name": "Super Batch Export",
-    "author": "MrTriPie",
+    "author": "Bastian L Strube",
     "version": (2, 1, 1),
     "blender": (3, 3, 0),
     "category": "Import-Export",
@@ -80,7 +80,7 @@ def get_preset_index(operator, preset_name):
 def draw_settings(self, context):
     self.layout.use_property_split = True
     self.layout.use_property_decorate = False
-
+    
     settings = context.scene.batch_export
     self.layout.operator('export_mesh.batch', icon='EXPORT')
 
@@ -155,6 +155,50 @@ def draw_popover(self, context):
     row = row.row(align=True)
     row.operator('export_mesh.batch', text='', icon='EXPORT')
     row.popover(panel='POPOVER_PT_batch_export', text='')
+
+# Tests if object is hidden in render
+def is_hidden_in_render(obj):
+    """
+    Check if an object is hidden in render, taking into account both:
+    1. The object's own hide_render property
+    2. The visibility of its parent view layer
+    
+    Args:
+        obj: A Blender object
+        
+    Returns:
+        bool: True if the object is hidden in render, False otherwise
+    """
+    
+    # Check if object itself is hidden in render
+    if obj.hide_render:
+        return True
+    
+    # Check if the object is in a collection that's hidden in render
+    for collection in bpy.data.collections:
+        if obj.name in collection.objects:
+            if collection.hide_render:
+                return True
+    
+    # Check if object is in a collection that's excluded from the view layer
+    view_layer = bpy.context.view_layer
+    for collection in bpy.data.collections:
+        if obj.name in collection.objects:
+            # Check if collection is excluded from view layer
+            if collection.name in view_layer.layer_collection.children:
+                layer_collection = view_layer.layer_collection.children[collection.name]
+                if layer_collection.exclude:
+                    return True
+    
+    # If the object has a parent, check if any parent in the hierarchy is hidden
+    parent = obj.parent
+    while parent:
+        if parent.hide_render:
+            return True
+        parent = parent.parent
+    
+    # Object is visible in render
+    return False
 
 # Side Panel panel (used with Side Panel option)
 class VIEW3D_PT_batch_export(Panel):
@@ -238,6 +282,12 @@ class EXPORT_MESH_OT_batch(Operator):
         objects = view_layer.objects.values()
         if settings.limit == 'SELECTED':
             objects = selection
+        elif settings.limit == 'RENDERABLE':
+            renderobjects = []
+            for obj in objects:
+                if not is_hidden_in_render(obj):
+                    renderobjects.append(obj)
+            objects = renderobjects
 
         mode = ''
         if obj_active:
@@ -540,6 +590,7 @@ class BatchExportSettings(PropertyGroup):
         items=[
             ("VISIBLE", "Visible", "", 1),
             ("SELECTED", "Selected", "", 2),
+            ("RENDERABLE", "Visible in Render", "", 3)
         ],
     )
 
