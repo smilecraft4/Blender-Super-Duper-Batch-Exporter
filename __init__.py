@@ -156,49 +156,43 @@ def draw_popover(self, context):
     row.operator('export_mesh.batch', text='', icon='EXPORT')
     row.popover(panel='POPOVER_PT_batch_export', text='')
 
-# Tests if object is hidden in render
-def is_hidden_in_render(obj):
+# Finds all renderable objects
+def get_renderable_objects():
     """
-    Check if an object is hidden in render, taking into account both:
-    1. The object's own hide_render property
-    2. The visibility of its parent view layer
+    Recursively collect hidden objects from scene collections.
     
-    Args:
-        obj: A Blender object
-        
     Returns:
-        bool: True if the object is hidden in render, False otherwise
+        list: A list of objects hidden in viewport or render
     """
+    renderable_objects = []
     
-    # Check if object itself is hidden in render
-    if obj.hide_render:
-        return True
+    def check_collection(collection):
+        # Skip if collection is None
+        if not collection:
+            return
+        
+        # Skip if the entire collection is hidden in render
+        if collection.hide_render:
+            return
+        
+        # Check objects in this collection
+        for obj in collection.objects:
+            # Check both viewport and render visibility
+            if not obj.hide_render:
+                renderable_objects.append(obj)
+        
+        # Recursively check child collections
+        while collection.children:
+            for child_collection in collection.children:
+                # Skip child collections that are hidden in render
+                if not child_collection.hide_render:
+                    check_collection(child_collection)
+            break  # Use break to match the while loop structure
     
-    # Check if the object is in a collection that's hidden in render
-    for collection in bpy.data.collections:
-        if obj.name in collection.objects:
-            if collection.hide_render:
-                return True
+    # Start the recursive check from the scene's root collection
+    check_collection(bpy.context.scene.collection)
     
-    # Check if object is in a collection that's excluded from the view layer
-    view_layer = bpy.context.view_layer
-    for collection in bpy.data.collections:
-        if obj.name in collection.objects:
-            # Check if collection is excluded from view layer
-            if collection.name in view_layer.layer_collection.children:
-                layer_collection = view_layer.layer_collection.children[collection.name]
-                if layer_collection.exclude:
-                    return True
-    
-    # If the object has a parent, check if any parent in the hierarchy is hidden
-    parent = obj.parent
-    while parent:
-        if parent.hide_render:
-            return True
-        parent = parent.parent
-    
-    # Object is visible in render
-    return False
+    return renderable_objects
 
 # Side Panel panel (used with Side Panel option)
 class VIEW3D_PT_batch_export(Panel):
@@ -282,15 +276,16 @@ class EXPORT_MESH_OT_batch(Operator):
         obj_active = view_layer.objects.active
         selection = context.selected_objects
         objects = view_layer.objects.values()
-        if settings.limit == 'SELECTED':
+        if settings.limit == 'VISIBLE':
+            visibleobjects = []
+            for obj in objects:
+                if obj.visible_get():
+                    visibleobjects.append(obj)
+            objects = visibleobjects
+        elif settings.limit == 'SELECTED':
             objects = selection
         elif settings.limit == 'RENDERABLE':
-            renderobjects = []
-            for obj in objects:
-                # THIS FUNCTION ONLY ACCOUNTS FOR EMMIDIATE PARENT COLLECTION VISIBILITY
-                if not is_hidden_in_render(obj):
-                    renderobjects.append(obj)
-            objects = renderobjects
+            objects = get_renderable_objects()
 
         mode = ''
         if obj_active:
