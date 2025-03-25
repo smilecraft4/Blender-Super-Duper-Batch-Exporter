@@ -4,8 +4,8 @@ from bpy.props import BoolProperty, IntProperty, EnumProperty, StringProperty, P
 import os
 
 bl_info = {
-    "name": "Super Batch Export",
-    "author": "Bastian L Strube",
+    "name": "Super Duper Batch Exporter",
+    "author": "Bastian L Strube, Mrtripie",
     "version": (2, 1, 1),
     "blender": (3, 3, 0),
     "category": "Import-Export",
@@ -276,6 +276,8 @@ class EXPORT_MESH_OT_batch(Operator):
 
         self.file_count = 0
 
+        # COLLECTION VISIBILITY IS NOT TAKEN INTO ACCOUNT
+
         view_layer = context.view_layer
         obj_active = view_layer.objects.active
         selection = context.selected_objects
@@ -285,6 +287,7 @@ class EXPORT_MESH_OT_batch(Operator):
         elif settings.limit == 'RENDERABLE':
             renderobjects = []
             for obj in objects:
+                # THIS FUNCTION ONLY ACCOUNTS FOR EMMIDIATE PARENT COLLECTION VISIBILITY
                 if not is_hidden_in_render(obj):
                     renderobjects.append(obj)
             objects = renderobjects
