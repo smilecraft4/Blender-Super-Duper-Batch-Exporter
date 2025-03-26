@@ -156,44 +156,6 @@ def draw_popover(self, context):
     row.operator('export_mesh.batch', text='', icon='EXPORT')
     row.popover(panel='POPOVER_PT_batch_export', text='')
 
-# Finds all renderable objects
-def get_renderable_objects():
-    """
-    Recursively collect hidden objects from scene collections.
-    
-    Returns:
-        list: A list of objects hidden in viewport or render
-    """
-    renderable_objects = []
-    
-    def check_collection(collection):
-        # Skip if collection is None
-        if not collection:
-            return
-        
-        # Skip if the entire collection is hidden in render
-        if collection.hide_render:
-            return
-        
-        # Check objects in this collection
-        for obj in collection.objects:
-            # Check both viewport and render visibility
-            if not obj.hide_render:
-                renderable_objects.append(obj)
-        
-        # Recursively check child collections
-        while collection.children:
-            for child_collection in collection.children:
-                # Skip child collections that are hidden in render
-                if not child_collection.hide_render:
-                    check_collection(child_collection)
-            break  # Use break to match the while loop structure
-    
-    # Start the recursive check from the scene's root collection
-    check_collection(bpy.context.scene.collection)
-    
-    return renderable_objects
-
 # Side Panel panel (used with Side Panel option)
 class VIEW3D_PT_batch_export(Panel):
     bl_space_type = 'VIEW_3D'
@@ -248,166 +210,250 @@ class BatchExportPreferences(AddonPreferences):
 
 # Operator called when pressing the batch export button.
 class EXPORT_MESH_OT_batch(Operator):
-    """Export many objects to seperate files all at once"""
+    """Export many objects to separate files all at once"""
     bl_idname = "export_mesh.batch"
     bl_label = "Batch Export"
+    
     file_count = 0
 
     def execute(self, context):
         settings = context.scene.batch_export
-
-        base_dir = settings.directory
-        if not bpy.path.abspath('//'):  # Then the blend file hasn't been saved
-            # Then the path should be relative
-            if base_dir != bpy.path.abspath(base_dir):
-                self.report(
-                    {'ERROR'}, "Save .blend file somewhere before exporting to relative directory\n(or use an absolute directory)")
-                return {'FINISHED'}
-        base_dir = bpy.path.abspath(base_dir)  # convert to absolute path
-        if not os.path.isdir(base_dir):
-            self.report({'ERROR'}, "Export directory doesn't exist")
+        base_dir = self._validate_export_directory(context, settings)
+        
+        if not base_dir:
             return {'FINISHED'}
 
-        self.file_count = 0
+        # Store original scene state
+        original_state = self._save_scene_state(context)
 
-        # COLLECTION VISIBILITY IS NOT TAKEN INTO ACCOUNT
-
-        view_layer = context.view_layer
-        obj_active = view_layer.objects.active
-        selection = context.selected_objects
-        objects = view_layer.objects.values()
-        if settings.limit == 'VISIBLE':
-            visibleobjects = []
-            for obj in objects:
-                if obj.visible_get():
-                    visibleobjects.append(obj)
-            objects = visibleobjects
-        elif settings.limit == 'SELECTED':
-            objects = selection
-        elif settings.limit == 'RENDERABLE':
-            objects = get_renderable_objects()
-
-        mode = ''
-        if obj_active:
-            mode = obj_active.mode
-            bpy.ops.object.mode_set(mode='OBJECT')  # Only works in Object mode
-
-        if settings.mode == 'OBJECTS':
-            for obj in objects:
-                if not obj.type in settings.object_types:
-                    continue
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select_set(True)
-                self.export_selection(obj.name, context, base_dir)
-
-        elif settings.mode == 'OBJECT_PARENTS':
-            for obj in objects:
-                if obj.parent:  # if it has a parent, skip it for now, it'll be exported when we get to its parent
-                    continue
-                bpy.ops.object.select_all(action='DESELECT')
-                if obj.type in settings.object_types:
-                    obj.select_set(True)
-                self.select_children_recursive(obj, context,)
-                if context.selected_objects:
-                    self.export_selection(obj.name, context, base_dir)
-
-        elif settings.mode == 'COLLECTIONS':
-            for col in bpy.data.collections.values():
-                bpy.ops.object.select_all(action='DESELECT')
-                for obj in col.objects:
-                    if not obj.type in settings.object_types:
-                        continue
-                    if not obj in objects:
-                        continue
-                    obj.select_set(True)
-                if context.selected_objects:
-                    self.export_selection(col.name, context, base_dir)
-
-        elif settings.mode == 'COLLECTION_SUBDIRECTORIES':
-            for obj in objects:
-                if not obj.type in settings.object_types:
-                    continue
-
-                # Modify base_dir to add collection, creating directory if necessary
-                sCollection = obj.users_collection[0].name
-                if sCollection != "Scene Collection":
-                  collection_dir = os.path.join(base_dir, sCollection)
-                  if not os.path.exists(collection_dir):
-                    try:
-                      os.makedirs(collection_dir)
-                      print(f"Directory created: {collection_dir}")
-                    except OSError as e:
-                      print(f"Error creating directory {collection_dir}: {e}")
-                else:
-                    collection_dir = base_dir
-
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select_set(True)
-                self.export_selection(obj.name, context, collection_dir)
-
-        elif settings.mode == 'COLLECTION_SUBDIR_PARENTS':
-            for obj in objects:
-                if obj.parent:  # if it has a parent, skip it for now, it'll be exported when we get to its parent
-                    continue
-
-                bpy.ops.object.select_all(action='DESELECT')
-                if obj.type in settings.object_types:
-                    obj.select_set(True)
-
-                    # Modify base_dir to add collection, creating directory if necessary
-                    sCollection = obj.users_collection[0].name
-                    if sCollection != "Scene Collection":
-                      collection_dir = os.path.join(base_dir, sCollection)
-
-                      if not os.path.exists(collection_dir):
-                        try:
-                          os.makedirs(collection_dir)
-                          print(f"Directory created: {collection_dir}")
-                        except OSError as e:
-                          print(f"Error creating directory {collection_dir}: {e}")
-                    else:
-                        collection_dir = base_dir
-
-                self.select_children_recursive(obj, context,)
-                if context.selected_objects:
-                    self.export_selection(obj.name, context, collection_dir)
-
-        elif settings.mode == 'SCENE':
-            prefix = settings.prefix
-            suffix = settings.suffix
+        try:
+            # Perform batch export based on selected mode
+            export_methods = {
+                'OBJECTS': self._export_individual_objects,
+                'OBJECT_PARENTS': self._export_object_parents,
+                'COLLECTIONS': self._export_collections,
+                'COLLECTION_SUBDIRECTORIES': self._export_collection_subdirectories,
+                'COLLECTION_SUBDIR_PARENTS': self._export_collection_subdir_parents,
+                'SCENE': self._export_entire_scene
+            }
             
-            filename = ''
-            if not prefix and not suffix:
-                filename = bpy.path.basename(bpy.context.blend_data.filepath).split('.')[0]
-            
-            bpy.ops.object.select_all(action='DESELECT')
-            for obj in objects:
-                obj.select_set(True)
-            self.export_selection(filename, context, base_dir)
+            export_method = export_methods.get(settings.mode)
+            if export_method:
+                export_method(context, settings, base_dir)
 
-        # Return selection to how it was
+        finally:
+            # Restore original scene state
+            self._restore_scene_state(context, original_state)
+
+        # Report export results
+        self._report_export_results()
+        return {'FINISHED'}
+
+    def _validate_export_directory(self, context, settings):
+        """Validate and prepare export directory."""
+        base_dir = settings.directory
+        
+        if not bpy.path.abspath('//'):
+            if base_dir != bpy.path.abspath(base_dir):
+                self.report(
+                    {'ERROR'}, 
+                    "Save .blend file before exporting to relative directory\n(or use an absolute directory)"
+                )
+                return None
+        
+        base_dir = bpy.path.abspath(base_dir)
+        
+        if not os.path.isdir(base_dir):
+            self.report({'ERROR'}, "Export directory doesn't exist")
+            return None
+        
+        return base_dir
+
+    def _save_scene_state(self, context):
+        """Save the current scene state before batch export."""
+        return {
+            'active_object': context.view_layer.objects.active,
+            'selected_objects': context.selected_objects,
+            'all_objects'
+            'mode': context.active_object.mode if context.active_object else None
+        }
+
+    def _restore_scene_state(self, context, state):
+        """Restore the scene state after batch export."""
         bpy.ops.object.select_all(action='DESELECT')
-        for obj in selection:
+        for obj in state['selected_objects']:
             obj.select_set(True)
-        view_layer.objects.active = obj_active
+        context.view_layer.objects.active = state['active_object']
+        
+        if state['mode'] and state['active_object']:
+            bpy.ops.object.mode_set(mode=state['mode'])
 
-        # Return to whatever mode the user was in
-        if obj_active:
-            bpy.ops.object.mode_set(mode=mode)
-
+    def _report_export_results(self):
+        """Report the number of exported files."""
         if self.file_count == 0:
             self.report({'ERROR'}, "NOTHING TO EXPORT")
         else:
-            self.report({'INFO'}, "Exported " +
-                        str(self.file_count) + " file(s)")
+            self.report({'INFO'}, f"Exported {self.file_count} file(s)")
 
-        return {'FINISHED'}
+    def _get_filtered_objects(self, context, settings):
+        """Get filtered objects based on export settings."""
+        objects = context.view_layer.objects.values()
+        
+        # Filter objects based on limit setting
+        if settings.limit == 'VISIBLE':
+            objects = [obj for obj in objects if obj.visible_get()]
+        elif settings.limit == 'SELECTED':
+            objects = context.selected_objects
+        elif settings.limit == 'RENDERABLE':
+            objects = self.get_renderable_objects()
+        
+        return objects
 
-    def select_children_recursive(self, obj, context):
-        for c in obj.children:
-            if obj.type in context.scene.batch_export.object_types:
-                c.select_set(True)
-            self.select_children_recursive(c, context)
+    def _export_individual_objects(self, context, settings, base_dir):
+        """Export individual objects."""
+        objects = self._get_filtered_objects(context, settings)
+        
+        for obj in objects:
+            if obj.type not in settings.object_types:
+                continue
+            
+            bpy.ops.object.select_all(action='DESELECT')
+            obj.select_set(True)
+            self.export_selection(obj.name, context, base_dir)
+
+    def _export_object_parents(self, context, settings, base_dir):
+        """Export objects by parent hierarchy."""
+        objects = self._get_filtered_objects(context, settings)
+        
+        for obj in objects:
+            if obj.parent:
+                continue
+            
+            bpy.ops.object.select_all(action='DESELECT')
+            
+            if obj.type in settings.object_types:
+                obj.select_set(True)
+            
+            self._select_children_recursive(obj, context)
+            
+            if context.selected_objects:
+                self.export_selection(obj.name, context, base_dir)
+
+    def _export_collections(self, context, settings, base_dir):
+        """Export objects grouped by collections."""
+        objects = self._get_filtered_objects(context, settings)
+        
+        for col in bpy.data.collections.values():
+            bpy.ops.object.select_all(action='DESELECT')
+            
+            for obj in col.objects:
+                if obj.type not in settings.object_types or obj not in objects:
+                    continue
+                obj.select_set(True)
+            
+            if context.selected_objects:
+                self.export_selection(col.name, context, base_dir)
+
+    def _export_collection_subdirectories(self, context, settings, base_dir):
+        """Export objects to collection-specific subdirectories."""
+        objects = self._get_filtered_objects(context, settings)
+        
+        for obj in objects:
+            if obj.type not in settings.object_types:
+                continue
+
+            collection_name = obj.users_collection[0].name
+            collection_dir = base_dir if collection_name == "Scene Collection" else \
+                self._create_collection_directory(base_dir, collection_name)
+
+            bpy.ops.object.select_all(action='DESELECT')
+            obj.select_set(True)
+            self.export_selection(obj.name, context, collection_dir)
+
+    def _export_collection_subdir_parents(self, context, settings, base_dir):
+        """Export object parents to collection-specific subdirectories."""
+        objects = self._get_filtered_objects(context, settings)
+        
+        for obj in objects:
+            if obj.parent:
+                continue
+
+            bpy.ops.object.select_all(action='DESELECT')
+
+            if obj.type in settings.object_types:
+                obj.select_set(True)
+
+            collection_name = obj.users_collection[0].name
+            collection_dir = base_dir if collection_name == "Scene Collection" else \
+                self._create_collection_directory(base_dir, collection_name)
+
+            self._select_children_recursive(obj, context)
+            
+            if context.selected_objects:
+                self.export_selection(obj.name, context, collection_dir)
+
+    def _export_entire_scene(self, context, settings, base_dir):
+        """Export the entire scene."""
+        objects = self._get_filtered_objects(context, settings)
+        
+        prefix = settings.prefix
+        suffix = settings.suffix
+        
+        filename = ''
+        if not prefix and not suffix:
+            filename = bpy.path.basename(bpy.context.blend_data.filepath).split('.')[0]
+        
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in objects:
+            obj.select_set(True)
+        
+        self.export_selection(filename, context, base_dir)
+
+    def _create_collection_directory(self, base_dir, collection_name):
+        """Create a subdirectory for a specific collection."""
+        collection_dir = os.path.join(base_dir, collection_name)
+        
+        if not os.path.exists(collection_dir):
+            try:
+                os.makedirs(collection_dir)
+                print(f"Directory created: {collection_dir}")
+            except OSError as e:
+                print(f"Error creating directory {collection_dir}: {e}")
+        
+        return collection_dir
+
+    def _select_children_recursive(self, obj, context):
+        """Recursively select child objects."""
+        for child in obj.children:
+            if child.type in context.scene.batch_export.object_types:
+                child.select_set(True)
+            self._select_children_recursive(child, context)
+
+    @staticmethod
+    def get_renderable_objects():
+        """
+        Recursively collect renderable objects from scene collections.
+        
+        Returns:
+            list: A list of objects visible in render
+        """
+        renderable_objects = []
+        
+        def check_collection(collection):
+            if not collection or collection.hide_render:
+                return
+            
+            for obj in collection.objects:
+                if not obj.hide_render:
+                    renderable_objects.append(obj)
+            
+            for child_collection in collection.children:
+                if not child_collection.hide_render:
+                    check_collection(child_collection)
+        
+        check_collection(bpy.context.scene.collection)
+        
+        return renderable_objects
 
     def export_selection(self, itemname, context, base_dir):
         settings = context.scene.batch_export
