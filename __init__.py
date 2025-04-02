@@ -264,28 +264,24 @@ class EXPORT_MESH_OT_batch(Operator):
             for obj in objects:
                 if not obj.type in settings.object_types:
                     continue
+                # Export Selection
                 bpy.ops.object.select_all(action='DESELECT')
-                export_name = obj.name
-                if settings.prefix_collection:
-                    colstring = '/'.join([x.name for x in obj.users_collection])
-                    export_name = colstring+'.'+export_name
                 obj.select_set(True)
-                self.export_selection(export_name, context, base_dir)
+
+                self.export_selection(obj.name, context, base_dir)
 
         elif settings.mode == 'OBJECT_PARENTS':
             for obj in objects:
                 if obj.parent:  # if it has a parent, skip it for now, it'll be exported when we get to its parent
                     continue
+                # Export Selection
                 bpy.ops.object.select_all(action='DESELECT')
-                export_name = obj.name
-                if settings.prefix_collection:
-                    colstring = '/'.join([x.name for x in obj.users_collection])
-                    export_name = colstring+'.'+export_name
                 if obj.type in settings.object_types:
                     obj.select_set(True)
                 self.select_children_recursive(obj, context,)
+
                 if context.selected_objects:
-                    self.export_selection(export_name, context, base_dir)
+                    self.export_selection(obj.name, context, base_dir)
 
         elif settings.mode == 'COLLECTIONS':
             for col in bpy.data.collections.values():
@@ -360,11 +356,6 @@ class EXPORT_MESH_OT_batch(Operator):
             for obj in objects:
                 obj.select_set(True)
             self.export_selection(filename, context, base_dir)
-
-        # Return Visiblity to previous if Renderable was limit
-        elif settings.limit == 'RENDERABLE':
-            for obj in hiddenObjects:
-                obj.hide_set(True)
 
         # Return selection to how it was
         bpy.ops.object.select_all(action='DESELECT')
@@ -457,6 +448,12 @@ class EXPORT_MESH_OT_batch(Operator):
                     obj.rotation_euler = settings.rotation
                 if settings.set_scale:
                     obj.scale = settings.scale
+
+            # Export Name If Collection As Prefix
+            if settings.prefix_collection and 'OBJECT' in settings.mode:
+                collection_name = obj.users_collection[0].name
+                if not collection_name == 'Scene Collection':
+                    itemname = "_".join([collection_name, itemname])
 
         # Some exporters only use the active object: #I think this isn't true anymore
         # view_layer.objects.active = obj
