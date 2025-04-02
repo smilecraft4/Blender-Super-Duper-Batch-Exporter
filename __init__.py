@@ -249,7 +249,7 @@ class EXPORT_MESH_OT_batch(Operator):
             objects = selection
         elif settings.limit == 'RENDERABLE':
             renderobjects = []
-            all_renderable_objects = get_renderable_objects()
+            all_renderable_objects = self.get_renderable_objects()
             for obj in objects:
                 if obj.visible_get() and obj in all_renderable_objects:
                     renderobjects.append(obj)
