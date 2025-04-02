@@ -156,44 +156,6 @@ def draw_popover(self, context):
     row.operator('export_mesh.batch', text='', icon='EXPORT')
     row.popover(panel='POPOVER_PT_batch_export', text='')
 
-# Finds all renderable objects
-def get_renderable_objects():
-    """
-    Recursively collect hidden objects from scene collections.
-    
-    Returns:
-        list: A list of objects hidden in viewport or render
-    """
-    renderable_objects = []
-    
-    def check_collection(collection):
-        # Skip if collection is None
-        if not collection:
-            return
-        
-        # Skip if the entire collection is hidden in render
-        if collection.hide_render:
-            return
-        
-        # Check objects in this collection
-        for obj in collection.objects:
-            # Check both viewport and render visibility
-            if not obj.hide_render:
-                renderable_objects.append(obj)
-        
-        # Recursively check child collections
-        while collection.children:
-            for child_collection in collection.children:
-                # Skip child collections that are hidden in render
-                if not child_collection.hide_render:
-                    check_collection(child_collection)
-            break  # Use break to match the while loop structure
-    
-    # Start the recursive check from the scene's root collection
-    check_collection(bpy.context.scene.collection)
-    
-    return renderable_objects
-
 # Side Panel panel (used with Side Panel option)
 class VIEW3D_PT_batch_export(Panel):
     bl_space_type = 'VIEW_3D'
@@ -270,8 +232,6 @@ class EXPORT_MESH_OT_batch(Operator):
 
         self.file_count = 0
 
-        # COLLECTION VISIBILITY IS NOT TAKEN INTO ACCOUNT
-
         view_layer = context.view_layer
         obj_active = view_layer.objects.active
         selection = context.selected_objects
@@ -285,12 +245,12 @@ class EXPORT_MESH_OT_batch(Operator):
         elif settings.limit == 'SELECTED':
             objects = selection
         elif settings.limit == 'RENDERABLE':
-            hiddenObjects = []
-            objects = get_renderable_objects()
+            renderobjects = []
+            all_renderable_objects = get_renderable_objects()
             for obj in objects:
-                if obj.hide_get():
-                    hiddenObjects.append(obj)
-                    obj.hide_set(False)
+                if obj.visible_get() and obj in all_renderable_objects:
+                    renderobjects.append(obj)
+            objects = renderobjects
 
         mode = ''
         if obj_active:
@@ -412,6 +372,44 @@ class EXPORT_MESH_OT_batch(Operator):
                         str(self.file_count) + " file(s)")
 
         return {'FINISHED'}
+
+    # Finds all renderable objects
+    def get_renderable_objects(self):
+        """
+        Recursively collect hidden objects from scene collections.
+        
+        Returns:
+            list: A list of objects hidden in viewport or render
+        """
+        renderable_objects = []
+        
+        def check_collection(collection):
+            # Skip if collection is None
+            if not collection:
+                return
+            
+            # Skip if the entire collection is hidden in render
+            if collection.hide_render:
+                return
+            
+            # Check objects in this collection
+            for obj in collection.objects:
+                # Check both viewport and render visibility
+                if not obj.hide_render:
+                    renderable_objects.append(obj)
+            
+            # Recursively check child collections
+            while collection.children:
+                for child_collection in collection.children:
+                    # Skip child collections that are hidden in render
+                    if not child_collection.hide_render:
+                        check_collection(child_collection)
+                break  # Use break to match the while loop structure
+        
+        # Start the recursive check from the scene's root collection
+        check_collection(bpy.context.scene.collection)
+        
+        return renderable_objects
 
     def get_filtered_objects(self, context, settings):
         objects = context.view_layer.objects.values()
@@ -608,7 +606,7 @@ class BatchExportSettings(PropertyGroup):
         items=[
             ("VISIBLE", "Visible", "", 1),
             ("SELECTED", "Selected", "", 2),
-            ("RENDERABLE", "Visible in Render", "", 3)
+            ("RENDERABLE", "Render Enabled & Visible", "", 3)
         ],
     )
 
