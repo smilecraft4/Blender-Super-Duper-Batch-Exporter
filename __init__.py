@@ -270,7 +270,7 @@ class EXPORT_MESH_OT_batch(Operator):
 
                 self.export_selection(obj.name, context, base_dir)
 
-        elif settings.mode == 'OBJECT_PARENTS':
+        elif settings.mode == 'PARENT_OBJECTS':
             for obj in objects:
                 if obj.parent:  # if it has a parent, skip it for now, it'll be exported when we get to its parent
                     continue
@@ -599,8 +599,8 @@ class BatchExportSettings(PropertyGroup):
         name="Mode",
         description="What to export",
         items=[
-            ("OBJECTS", "Objects", "Each object is exported to its own file", 1),
-            ("OBJECT_PARENTS", "Objects by Parents",
+            ("OBJECTS", "Objects", "Each object is exported separately", 1),
+            ("PARENT_OBJECTS", "Parent Objects exported with its children",
              "Same as 'Objects', but objects that are parents have their\nchildren exported with them instead of by themselves", 2),
             ("COLLECTIONS", "Collections",
              "Each collection is exported into its own file", 3),
@@ -610,7 +610,7 @@ class BatchExportSettings(PropertyGroup):
              "Same as 'Collection Sub-directories', but objects that are\nparents have their children exported with them instead of by themselves", 5),
             ("SCENE", "Scene", "Export the scene into one file\nUse prefix or suffix for filename, else .blend file name is used.", 6),
         ],
-        default="OBJECT_PARENTS",
+        default="PARENT_OBJECTS",
     )
     limit: EnumProperty(
         name="Limit to",
@@ -792,114 +792,3 @@ def unregister():
 
 if __name__ == '__main__':
     register()
-
-
-'''
-import bpy
-import os
-from bpy.types import Operator
-
-class EXPORT_MESH_OT_batch(Operator):
-    """Export many objects to separate files all at once"""
-    bl_idname = "export_mesh.batch"
-    bl_label = "Batch Export"
-    file_count = 0
-
-    def execute(self, context):
-        settings = context.scene.batch_export
-        base_dir = bpy.path.abspath(settings.directory)
-        
-        if not bpy.path.abspath('//') and base_dir != bpy.path.abspath(base_dir):
-            self.report({'ERROR'}, "Save .blend file somewhere before exporting to a relative directory")
-            return {'FINISHED'}
-        
-        if not os.path.isdir(base_dir):
-            self.report({'ERROR'}, "Export directory doesn't exist")
-            return {'FINISHED'}
-        
-        self.file_count = 0
-        view_layer = context.view_layer
-        obj_active = view_layer.objects.active
-        selection = context.selected_objects
-        objects = self.get_filtered_objects(context, settings)
-        
-        if obj_active:
-            prev_mode = obj_active.mode
-            bpy.ops.object.mode_set(mode='OBJECT')
-        
-        self.process_export(settings, objects, context, base_dir)
-        
-        if obj_active:
-            bpy.ops.object.mode_set(mode=prev_mode)
-        
-        self.restore_selection(selection, view_layer, obj_active)
-        self.report({'INFO' if self.file_count else 'ERROR'}, f"Exported {self.file_count} file(s)")
-        
-        return {'FINISHED'}
-
-    def get_filtered_objects(self, context, settings):
-        objects = context.view_layer.objects.values()
-        if settings.limit == 'VISIBLE':
-            return [obj for obj in objects if obj.visible_get()]
-        if settings.limit == 'SELECTED':
-            return context.selected_objects
-        if settings.limit == 'RENDERABLE':
-            return [obj for obj in get_renderable_objects() if not obj.hide_get()]
-        return objects
-
-    def process_export(self, settings, objects, context, base_dir):
-        if settings.mode == 'OBJECTS':
-            for obj in objects:
-                if obj.type in settings.object_types:
-                    bpy.ops.object.select_all(action='DESELECT')
-                    obj.select_set(True)
-                    self.export_selection(obj.name, context, base_dir)
-        
-        elif settings.mode == 'OBJECT_PARENTS':
-            for obj in objects:
-                if obj.type in settings.object_types and not obj.parent:
-                    self.export_hierarchy(obj, context, base_dir)
-        
-        elif settings.mode in {'COLLECTIONS', 'COLLECTION_SUBDIRECTORIES', 'COLLECTION_SUBDIR_PARENTS'}:
-            self.export_collections(settings, objects, context, base_dir)
-        
-        elif settings.mode == 'SCENE':
-            self.export_scene(context, base_dir)
-
-    def export_hierarchy(self, obj, context, base_dir):
-        bpy.ops.object.select_all(action='DESELECT')
-        obj.select_set(True)
-        self.select_children_recursive(obj, context)
-        if len(context.selected_objects) > 0:
-            self.export_selection(obj.name, context, base_dir)
-
-    def export_collections(self, settings, objects, context, base_dir):
-        for col in bpy.data.collections:
-            bpy.ops.object.select_all(action='DESELECT')
-            for obj in col.objects:
-                if obj.type in settings.object_types and obj in objects:
-                    obj.select_set(True)
-            if context.selected_objects:
-                collection_dir = os.path.join(base_dir, col.name) if settings.mode != 'COLLECTIONS' else base_dir
-                os.makedirs(collection_dir, exist_ok=True)
-                self.export_selection(col.name, context, collection_dir)
-
-    def export_scene(self, context, base_dir):
-        filename = bpy.path.basename(bpy.context.blend_data.filepath).split('.')[0]
-        bpy.ops.object.select_all(action='DESELECT')
-        for obj in context.view_layer.objects:
-            obj.select_set(True)
-        self.export_selection(filename, context, base_dir)
-
-    def select_children_recursive(self, obj, context):
-        for child in obj.children:
-            if child.type in context.scene.batch_export.object_types:
-                child.select_set(True)
-            self.select_children_recursive(child, context)
-    
-    def restore_selection(self, selection, view_layer, obj_active):
-        bpy.ops.object.select_all(action='DESELECT')
-        for obj in selection:
-            obj.select_set(True)
-        view_layer.objects.active = obj_active
-'''
