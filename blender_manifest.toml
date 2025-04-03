@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "SuperDuperBatchExporter"
-version = "0.4.0"
+version = "2.4.0"
 name = "Super Duper Batch Exporter"
 tagline = "One click export, with settings per blender file"
 maintainer = "Bastian L Strube <mail@bastianlstrube.dk>"

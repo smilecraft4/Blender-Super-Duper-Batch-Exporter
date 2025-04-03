@@ -1,14 +1,17 @@
+# SPDX-FileCopyrightText: 2016-2024 Bastian L. Strube
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 bl_info = {
     "name": "Super Duper Batch Exporter",
     "author": "Bastian L Strube, Mrtripie",
-    "version": (2, 1, 1),
-    "blender": (3, 3, 0),
+    "version": (2, 4, 0),
+    "blender": (4, 2, 0),
     "category": "Import-Export",
     "location": "Set in preferences below. Default: Top Bar (After File, Edit, ...Help)",
     "description": "Batch export the objects in your scene into seperate files",
     "warning": "Relies on the export add-on for the format used being enabled",
-    "doc_url": "github.com/mrtripie/Blender-Super-Batch-Export/blob/main/README.md",
-    "tracker_url": "github.com/mrtripie/Blender-Super-Batch-Export/issues",
+    "doc_url": "https://github.com/bastianlstrube/Blender-Super-Duper-Batch-Exporter",
 }
 
 import bpy
