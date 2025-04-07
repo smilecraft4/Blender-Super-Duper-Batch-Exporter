@@ -22,7 +22,7 @@ def draw_settings(self, context):
     col.prop(settings, 'file_format')
     col.prop(settings, 'mode')
     col.prop(settings, 'limit')
-    if settings.mode != 'COLLECTIONS':
+    if 'OBJECT' in settings.mode:
         col.prop(settings, 'prefix_collection')
 
 

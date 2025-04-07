@@ -299,12 +299,12 @@ class EXPORT_MESH_OT_batch(Operator):
             bpy.ops.wm.obj_export(**options)
 
         elif settings.file_format == "PLY":
-            bpy.ops.export_mesh.ply(
-                filepath=fp+".ply", use_ascii=settings.ply_ascii, use_selection=True, use_mesh_modifiers=settings.apply_mods)
+            bpy.ops.wm.ply_export(
+                filepath=fp+".ply", ascii_format=settings.ply_ascii, export_selected_objects=True, apply_modifiers=settings.apply_mods)
 
         elif settings.file_format == "STL":
-            bpy.ops.export_mesh.stl(
-                filepath=fp+".stl", ascii=settings.stl_ascii, use_selection=True, use_mesh_modifiers=settings.apply_mods)
+            bpy.ops.wm.stl_export(
+                filepath=fp+".stl", ascii_format=settings.stl_ascii, export_selected_objects=True, apply_modifiers=settings.apply_mods)
 
         elif settings.file_format == "FBX":
             options = utils.load_operator_preset(
@@ -321,14 +321,6 @@ class EXPORT_MESH_OT_batch(Operator):
             options["use_selection"] = True
             options["export_apply"] = settings.apply_mods
             bpy.ops.export_scene.gltf(**options)
-
-        elif settings.file_format == "X3D":
-            options = utils.load_operator_preset(
-                'export_scene.x3d', settings.x3d_preset)
-            options["filepath"] = fp+".x3d"
-            options["use_selection"] = True
-            options["use_mesh_modifiers"] = settings.apply_mods
-            bpy.ops.export_scene.x3d(**options)
 
         # Reset the transform to what it was before
         i = 0

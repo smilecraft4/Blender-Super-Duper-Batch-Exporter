@@ -2,7 +2,7 @@ import bpy
 from bpy.types import PropertyGroup
 from bpy.props import (BoolProperty, IntProperty, EnumProperty, StringProperty, 
                        FloatVectorProperty)
-from . import utils
+from .utils import get_operator_presets, get_preset_index
 
 # Groups together all the addon settings that are saved in each .blend file
 class BatchExportSettings(PropertyGroup):
@@ -22,7 +22,7 @@ class BatchExportSettings(PropertyGroup):
         description="Text to put at the end of all the exported file names",
     )
     prefix_collection: BoolProperty(
-        name="Prefix Collection Name",
+        name="Prepend Collection Name",
         description="Adds the containing collection's name to the exported file's name, after the 'prefix'"
     )
 
@@ -41,7 +41,6 @@ class BatchExportSettings(PropertyGroup):
             ("STL", "STL (.stl)", "", 4),
             ("FBX", "FBX (.fbx)", "", 5),
             ("glTF", "glTF (.glb/.gltf)", "", 6),
-            ("X3D", "X3D Extensible 3D (.x3d)", "", 8),
         ],
         default="glTF",
     )
@@ -50,14 +49,14 @@ class BatchExportSettings(PropertyGroup):
         description="What to export",
         items=[
             ("OBJECTS", "Objects", "Each object is exported separately", 1),
-            ("PARENT_OBJECTS", "Parent Objects exported with its children",
-             "Same as 'Objects', but objects that are parents have their\nchildren exported with them instead of by themselves", 2),
+            ("PARENT_OBJECTS", "Parent Objects",
+             "Same as 'Objects', but objects that are parents have their\nchildren exported along with them", 2),
             ("COLLECTIONS", "Collections",
              "Each collection is exported into its own file", 3),
             ("COLLECTION_SUBDIRECTORIES", "Collection Sub-Directories",
              "Objects are exported inside sub-directories according to their parent collection", 4),
             ("COLLECTION_SUBDIR_PARENTS", "Collection Sub-Directories By Parent",
-             "Same as 'Collection Sub-directories', but objects that are\nparents have their children exported with them instead of by themselves", 5),
+             "Same as 'Collection Sub-directories', objects that are\nparents have their children exported along with them", 5),
             ("SCENE", "Scene", "Export the scene into one file\nUse prefix or suffix for filename, else .blend file name is used.", 6),
         ],
         default="PARENT_OBJECTS",
@@ -92,8 +91,8 @@ class BatchExportSettings(PropertyGroup):
     abc_preset_enum: EnumProperty(
         name="Preset", options={'SKIP_SAVE'},
         description="Use export settings from a preset.\n(Create in the export settings from the File > Export > Alembic (.abc))",
-        items=lambda self, context: utils.get_operator_presets('wm.alembic_export'),
-        get=lambda self: utils.get_preset_index(
+        items=lambda self, context: get_operator_presets('wm.alembic_export'),
+        get=lambda self: get_preset_index(
             'wm.alembic_export', self.abc_preset),
         set=lambda self, value: setattr(
             self, 'abc_preset', preset_enum_items_refs['wm.alembic_export'][value][0]),
@@ -102,8 +101,8 @@ class BatchExportSettings(PropertyGroup):
     dae_preset_enum: EnumProperty(
         name="Preset", options={'SKIP_SAVE'},
         description="Use export settings from a preset.\n(Create in the export settings from the File > Export > Collada (.dae))",
-        items=lambda self, context: utils.get_operator_presets('wm.collada_export'),
-        get=lambda self: utils.get_preset_index(
+        items=lambda self, context: get_operator_presets('wm.collada_export'),
+        get=lambda self: get_preset_index(
             'wm.collada_export', self.dae_preset),
         set=lambda self, value: setattr(
             self, 'dae_preset', preset_enum_items_refs['wm.collada_export'][value][0]),
@@ -112,8 +111,8 @@ class BatchExportSettings(PropertyGroup):
     usd_preset_enum: EnumProperty(
         name="Preset", options={'SKIP_SAVE'},
         description="Use export settings from a preset.\n(Create in the export settings from the File > Export > Universal Scene Description (.usd, .usdc, .usda))",
-        items=lambda self, context: utils.get_operator_presets('wm.usd_export'),
-        get=lambda self: utils.get_preset_index('wm.usd_export', self.usd_preset),
+        items=lambda self, context: get_operator_presets('wm.usd_export'),
+        get=lambda self: get_preset_index('wm.usd_export', self.usd_preset),
         set=lambda self, value: setattr(
             self, 'usd_preset', preset_enum_items_refs['wm.usd_export'][value][0]),
     )
@@ -121,8 +120,8 @@ class BatchExportSettings(PropertyGroup):
     obj_preset_enum: EnumProperty(
         name="Preset", options={'SKIP_SAVE'},
         description="Use export settings from a preset.\n(Create in the export settings from the File > Export > Wavefront (.obj))",
-        items=lambda self, context: utils.get_operator_presets('wm.obj_export'),
-        get=lambda self: utils.get_preset_index('wm.obj_export', self.obj_preset),
+        items=lambda self, context: get_operator_presets('wm.obj_export'),
+        get=lambda self: get_preset_index('wm.obj_export', self.obj_preset),
         set=lambda self, value: setattr(
             self, 'obj_preset', preset_enum_items_refs['wm.obj_export'][value][0]),
     )
@@ -130,8 +129,8 @@ class BatchExportSettings(PropertyGroup):
     fbx_preset_enum: EnumProperty(
         name="Preset", options={'SKIP_SAVE'},
         description="Use export settings from a preset.\n(Create in the export settings from the File > Export > FBX (.fbx))",
-        items=lambda self, context: utils.get_operator_presets('export_scene.fbx'),
-        get=lambda self: utils.get_preset_index('export_scene.fbx', self.fbx_preset),
+        items=lambda self, context: get_operator_presets('export_scene.fbx'),
+        get=lambda self: get_preset_index('export_scene.fbx', self.fbx_preset),
         set=lambda self, value: setattr(
             self, 'fbx_preset', preset_enum_items_refs['export_scene.fbx'][value][0]),
     )
@@ -139,20 +138,11 @@ class BatchExportSettings(PropertyGroup):
     gltf_preset_enum: EnumProperty(
         name="Preset", options={'SKIP_SAVE'},
         description="Use export settings from a preset.\n(Create in the export settings from the File > Export > glTF (.glb/.gltf))",
-        items=lambda self, context: utils.get_operator_presets('export_scene.gltf'),
-        get=lambda self: utils.get_preset_index(
+        items=lambda self, context: get_operator_presets('export_scene.gltf'),
+        get=lambda self: get_preset_index(
             'export_scene.gltf', self.gltf_preset),
         set=lambda self, value: setattr(
             self, 'gltf_preset', preset_enum_items_refs['export_scene.gltf'][value][0]),
-    )
-    x3d_preset: StringProperty(default='NO_PRESET')
-    x3d_preset_enum: EnumProperty(
-        name="Preset", options={'SKIP_SAVE'},
-        description="Use export settings from a preset.\n(Create in the export settings from the File > Export > X3D Extensible 3D (.x3d))",
-        items=lambda self, context: utils.get_operator_presets('export_scene.x3d'),
-        get=lambda self: utils.get_preset_index('export_scene.x3d', self.x3d_preset),
-        set=lambda self, value: setattr(
-            self, 'x3d_preset', preset_enum_items_refs['export_scene.x3d'][value][0]),
     )
 
     apply_mods: BoolProperty(

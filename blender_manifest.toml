@@ -3,7 +3,7 @@ schema_version = "1.0.0"
 id = "SuperDuperBatchExporter"
 version = "2.4.0"
 name = "Super Duper Batch Exporter"
-tagline = "One click export to multiple files"
+tagline = "One click export, with settings per blender file"
 maintainer = "Bastian L Strube <mail@bastianlstrube.dk>"
 type = "add-on"
 
@@ -59,25 +59,22 @@ files = "Export files to disk"
 #   "/*.zip",
 # ]
 
+LongDescription = '''
+## Super Duper Batch Exporter
+One click export to multiple files. Set options like output directory, prefix, suffix, filter by type or set object location and rotation. All options need only to be set once and gets saved with the blender file.
 
-longdescription = """
-## Super Duper Batch Export
-One click export to multiple files.
-Setup options like Directory, Prefix & Suffix and 'Filter by Type' once, then enjoy a one click export from then on.
-All options are stored with the blenderfile.
-
-**Export Modes will export a file per:**
-- Objects
-- Parent Objects
-- Collections
-- Objects inside Collection Subdirectories  (NEW)
-- Parent Objects inside Collection Subdirectories  (NEW)
+Export a file for each:
+- Object
+- Parent Object
+- Collection
+- Object with Collections as Subdirectories    (NEW)
+- Parent Object with Collections as Subdirectories   (NEW)
 - Scene  (NEW)
 
-**Limit objects exported to:**
-- Visible
+Limit Objects exported to:
 - Selected
-- Render Enabled & Visible  (NEW)
+- Visible
+- Render Enabled and Visible  (NEW)
 
-This addon is a fork of MrTriPie's Super Batch Export that can be found on (github)[https://github.com/mrtripie/Blender-Super-Batch-Export]
-"""
+The Add-on is a fork of MrTriPie's Super Batch Export which can be found on (github)[https://github.com/mrtripie/Blender-Super-Batch-Export].
+'''
