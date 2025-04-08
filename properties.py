@@ -22,7 +22,7 @@ class BatchExportSettings(PropertyGroup):
         description="Text to put at the end of all the exported file names",
     )
     prefix_collection: BoolProperty(
-        name="Prepend Collection Name",
+        name="Prefix Collection Name",
         description="Adds the containing collection's name to the exported file's name, after the 'prefix'"
     )
 
