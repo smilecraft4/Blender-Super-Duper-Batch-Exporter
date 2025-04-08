@@ -43,9 +43,9 @@ license = [
 # # Keep this a single short sentence without a period (.) at the end.
 # # For longer explanations use the documentation or detail page.
 #
-[permissions]
+# [permissions]
 # network = "Need to sync motion-capture data to server"
-files = "Export files to disk"
+# files = "Export files to disk"
 # clipboard = "Copy and paste bone transforms"
 
 # # Optional: advanced build settings.
@@ -58,23 +58,3 @@ files = "Export files to disk"
 #   "/.git/",
 #   "/*.zip",
 # ]
-
-LongDescription = '''
-## Super Duper Batch Exporter
-One click export to multiple files. Set options like output directory, prefix, suffix, filter by type or set object location and rotation. All options need only to be set once and gets saved with the blender file.
-
-**Mode:** Export a file for each::
-- **Object**
-- **Parent Object**
-- **Collection**
-- **Object with Collections as Subdirectories**    (NEW)
-- **Parent Object with Collections as Subdirectories**   (NEW)
-- **Scene**  (NEW)
-
-**Limit Objects to:**
-- **Selected**
-- **Visible**
-- **Render Enabled and Visible**  (NEW)
-
-The Add-on is a fork of MrTriPie's Super Batch Export which can be found on (github)[https://github.com/mrtripie/Blender-Super-Batch-Export].
-'''
