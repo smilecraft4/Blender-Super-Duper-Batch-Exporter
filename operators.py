@@ -15,7 +15,7 @@ class EXPORT_MESH_OT_batch(Operator):
 
         # Set Base Directory
         base_dir = settings.directory
-        if not bpy.path.abspath('//'):  # Then the blend file hasn't been saved
+        if not bpy.data.is_saved:  # Then the blend file hasn't been saved
             # Then the path should be relative
             if base_dir != bpy.path.abspath(base_dir):
                 self.report(
