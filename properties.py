@@ -2,7 +2,7 @@ import bpy
 from bpy.types import PropertyGroup
 from bpy.props import (BoolProperty, IntProperty, EnumProperty, StringProperty, 
                        FloatVectorProperty)
-from .utils import get_operator_presets, get_preset_index
+from .utils import get_operator_presets, get_preset_index, preset_enum_items_refs
 
 # Groups together all the addon settings that are saved in each .blend file
 class BatchExportSettings(PropertyGroup):
