@@ -40,95 +40,102 @@ class EXPORT_MESH_OT_batch(Operator):
             mode = obj_active.mode
             bpy.ops.object.mode_set(mode='OBJECT')  # Only works in Object mode
         
-        # Get export Objects based on settings limit
-        objects = self.get_filtered_objects(context, settings)
-
 
         ##### EXPORT OBJECTS BASED ON MODES #####
 
         if settings.mode == 'OBJECTS':
-            for obj in objects:
-                if not obj.type in settings.object_types:
-                    continue
-                # Export Selection
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select_set(True)
+            for obj in self.get_filtered_objects(context, settings):
 
+                # Export Selection
+                obj.select_set(True)
                 self.export_selection(obj.name, context, base_dir)
 
+                # Deselect Obj
+                obj.select_set(False)
+
         elif settings.mode == 'PARENT_OBJECTS':
-            for obj in objects:
-                if obj.parent:  # if it has a parent, skip it for now, it'll be exported when we get to its parent
-                    continue
+            for obj in self.get_filtered_objects(context, settings):
+
                 # Export Selection
-                bpy.ops.object.select_all(action='DESELECT')
-                if obj.type in settings.object_types:
-                    obj.select_set(True)
+                obj.select_set(True)
                 self.select_children_recursive(obj, context,)
 
                 if context.selected_objects:
                     self.export_selection(obj.name, context, base_dir)
 
+                # Deselect
+                for obj in context.selected_objects:
+                    obj.select_set(False)
+
         elif settings.mode == 'COLLECTIONS':
+            exportobjects = self.get_filtered_objects(context, settings)
+
             for col in bpy.data.collections.values():
-                bpy.ops.object.select_all(action='DESELECT')
+                # Check if collection objects are in filtered objects
                 for obj in col.objects:
-                    if not obj.type in settings.object_types:
-                        continue
-                    if not obj in objects:
+                    if not obj in exportobjects:
                         continue
                     obj.select_set(True)
                 if context.selected_objects:
                     self.export_selection(col.name, context, base_dir)
 
+                # Deselect
+                for obj in context.selected_objects:
+                    obj.select_set(False)
+
         elif settings.mode == 'COLLECTION_SUBDIRECTORIES':
-            for obj in objects:
-                if not obj.type in settings.object_types:
+            for obj in self.get_filtered_objects(context, settings):
+
+                # Modify base_dir to add collection, creating directory if necessary
+                sCollection = obj.users_collection[0].name
+                if sCollection != "Scene Collection":
+                    collection_dir = os.path.join(base_dir, sCollection)
+                    if not os.path.exists(collection_dir):
+                        try:
+                            os.makedirs(collection_dir)
+                            print(f"Directory created: {collection_dir}")
+                        except OSError as e:
+                            self.report({'ERROR'}, f"Error creating directory {collection_dir}: {e}")
+                else:
+                    collection_dir = base_dir
+
+                # Select & Export
+                obj.select_set(True)
+                self.export_selection(obj.name, context, collection_dir)
+
+                # Deselect
+                obj.select_set(False)
+
+        elif settings.mode == 'COLLECTION_SUBDIR_PARENTS':
+            for obj in self.get_filtered_objects(context, settings):
+                if obj.parent:  # if it has a parent, skip it for now, it'll be exported when we get to its parent
                     continue
 
                 # Modify base_dir to add collection, creating directory if necessary
                 sCollection = obj.users_collection[0].name
                 if sCollection != "Scene Collection":
-                  collection_dir = os.path.join(base_dir, sCollection)
-                  if not os.path.exists(collection_dir):
-                    try:
-                      os.makedirs(collection_dir)
-                      print(f"Directory created: {collection_dir}")
-                    except OSError as e:
-                      print(f"Error creating directory {collection_dir}: {e}")
-                else:
-                    collection_dir = base_dir
+                    collection_dir = os.path.join(base_dir, sCollection)
 
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select_set(True)
-                self.export_selection(obj.name, context, collection_dir)
-
-        elif settings.mode == 'COLLECTION_SUBDIR_PARENTS':
-            for obj in objects:
-                if obj.parent:  # if it has a parent, skip it for now, it'll be exported when we get to its parent
-                    continue
-
-                bpy.ops.object.select_all(action='DESELECT')
-                if obj.type in settings.object_types:
-                    obj.select_set(True)
-
-                    # Modify base_dir to add collection, creating directory if necessary
-                    sCollection = obj.users_collection[0].name
-                    if sCollection != "Scene Collection":
-                      collection_dir = os.path.join(base_dir, sCollection)
-
-                      if not os.path.exists(collection_dir):
+                    if not os.path.exists(collection_dir):
                         try:
-                          os.makedirs(collection_dir)
-                          print(f"Directory created: {collection_dir}")
+                            os.makedirs(collection_dir)
+                            print(f"Directory created: {collection_dir}")
                         except OSError as e:
-                          print(f"Error creating directory {collection_dir}: {e}")
+                            self.report({'ERROR'}, f"Error creating directory {collection_dir}: {e}")
                     else:
                         collection_dir = base_dir
 
+                # Select Obj & Children
+                obj.select_set(True)
                 self.select_children_recursive(obj, context,)
+
+                # Export
                 if context.selected_objects:
                     self.export_selection(obj.name, context, collection_dir)
+
+                # Deselect
+                for obj in context.selected_objects:
+                    obj.select_set(False)
 
         elif settings.mode == 'SCENE':
             prefix = settings.prefix
@@ -138,8 +145,7 @@ class EXPORT_MESH_OT_batch(Operator):
             if not prefix and not suffix:
                 filename = bpy.path.basename(bpy.context.blend_data.filepath).split('.')[0]
             
-            bpy.ops.object.select_all(action='DESELECT')
-            for obj in objects:
+            for obj in self.get_filtered_objects(context, settings):
                 obj.select_set(True)
             self.export_selection(filename, context, base_dir)
 
@@ -199,15 +205,26 @@ class EXPORT_MESH_OT_batch(Operator):
         
         return renderable_objects
 
-    # Get Objects to Export by Limit Settings
+    # Deselect and Get Objects to Export by Limit Settings
     def get_filtered_objects(self, context, settings):
         objects = context.view_layer.objects.values()
         if settings.limit == 'VISIBLE':
-            return [obj for obj in objects if obj.visible_get()]
+            filtered_objects  =[]
+            for obj in objects:
+                obj.select_set(False)
+                if obj.visible_get() and obj.type in settings.object_types:
+                    filtered_objects.append(obj)
+            return filtered_objects
         if settings.limit == 'SELECTED':
-            return context.selected_objects
+            return [obj for obj in context.selected_objects if obj.type in settings.object_types]
         if settings.limit == 'RENDERABLE':
-            return [obj for obj in self.get_renderable_objects() if obj.visible_get()]
+            filtered_objects  =[]
+            for obj in objects:
+                obj.select_set(False)
+                if obj.visible_get() and obj.type in settings.object_types:
+                    if obj in obj.type in self.get_renderable_objects:
+                        filtered_objects.append(obj)
+            return filtered_objects
         return objects
 
     def select_children_recursive(self, obj, context):
