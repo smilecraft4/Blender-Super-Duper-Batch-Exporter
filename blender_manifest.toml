@@ -43,9 +43,9 @@ license = [
 # # Keep this a single short sentence without a period (.) at the end.
 # # For longer explanations use the documentation or detail page.
 #
-# [permissions]
+[permissions]
 # network = "Need to sync motion-capture data to server"
-# files = "Export files to disk"
+files = "Export files to disk & create subdirectories in output directory"
 # clipboard = "Copy and paste bone transforms"
 
 # # Optional: advanced build settings.
