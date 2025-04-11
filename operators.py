@@ -167,7 +167,7 @@ class EXPORT_MESH_OT_batch(Operator):
 
         return {'FINISHED'}
 
-    # Finds all renderable objects
+    # Finds all renderable objects and returns a list of them
     def get_renderable_objects(self):
         """
         Recursively collect hidden objects from scene collections.
@@ -209,7 +209,7 @@ class EXPORT_MESH_OT_batch(Operator):
     def get_filtered_objects(self, context, settings):
         objects = context.view_layer.objects.values()
         if settings.limit == 'VISIBLE':
-            filtered_objects  =[]
+            filtered_objects = []
             for obj in objects:
                 obj.select_set(False)
                 if obj.visible_get() and obj.type in settings.object_types:
@@ -218,11 +218,11 @@ class EXPORT_MESH_OT_batch(Operator):
         if settings.limit == 'SELECTED':
             return [obj for obj in context.selected_objects if obj.type in settings.object_types]
         if settings.limit == 'RENDERABLE':
-            filtered_objects  =[]
+            filtered_objects = []
             for obj in objects:
                 obj.select_set(False)
                 if obj.visible_get() and obj.type in settings.object_types:
-                    if obj in self.get_renderable_objects:
+                    if obj in self.get_renderable_objects():
                         filtered_objects.append(obj)
             return filtered_objects
         return objects
