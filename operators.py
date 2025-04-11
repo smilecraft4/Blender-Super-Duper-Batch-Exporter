@@ -222,7 +222,7 @@ class EXPORT_MESH_OT_batch(Operator):
             for obj in objects:
                 obj.select_set(False)
                 if obj.visible_get() and obj.type in settings.object_types:
-                    if obj in obj.type in self.get_renderable_objects:
+                    if obj in self.get_renderable_objects:
                         filtered_objects.append(obj)
             return filtered_objects
         return objects
