@@ -4,8 +4,8 @@
 
 bl_info = {
     "name": "Super Duper Batch Exporter",
-    "author": "Bastian L Strube, Mrtripie",
-    "version": (2, 4, 1),
+    "author": "Bastian L Strube, forked from Mrtripie",
+    "version": (2, 4, 2),
     "blender": (4, 2, 0),
     "category": "Import-Export",
     "location": "Set in preferences below. Default: Top Bar (After File, Edit, ...Help)",
