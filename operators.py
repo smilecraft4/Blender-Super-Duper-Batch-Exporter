@@ -90,13 +90,15 @@ class EXPORT_MESH_OT_batch(Operator):
                 sCollection = obj.users_collection[0].name
                 if sCollection != "Scene Collection":
                     collection_dir = os.path.join(base_dir, sCollection)
+
+                    # create sub-directory if it doesn't exist
                     if not os.path.exists(collection_dir):
                         try:
                             os.makedirs(collection_dir)
                             print(f"Directory created: {collection_dir}")
                         except OSError as e:
                             self.report({'ERROR'}, f"Error creating directory {collection_dir}: {e}")
-                else:
+                else: # If object is just in Scene Collection it get's exported to base_dir
                     collection_dir = base_dir
 
                 # Select & Export
@@ -115,15 +117,16 @@ class EXPORT_MESH_OT_batch(Operator):
                 sCollection = obj.users_collection[0].name
                 if sCollection != "Scene Collection":
                     collection_dir = os.path.join(base_dir, sCollection)
-
+                    
+                    # create sub-directory if it doesn't exist
                     if not os.path.exists(collection_dir):
                         try:
                             os.makedirs(collection_dir)
                             print(f"Directory created: {collection_dir}")
                         except OSError as e:
                             self.report({'ERROR'}, f"Error creating directory {collection_dir}: {e}")
-                    else:
-                        collection_dir = base_dir
+                else: # If object is just in Scene Collection it get's exported to base_dir
+                    collection_dir = base_dir
 
                 # Select Obj & Children
                 obj.select_set(True)
