@@ -21,10 +21,6 @@ class BatchExportSettings(PropertyGroup):
         name="Suffix",
         description="Text to put at the end of all the exported file names",
     )
-    prefix_collection: BoolProperty(
-        name="Prefix Collection Name",
-        description="Adds the containing collection's name to the exported file's name, after the 'prefix'"
-    )
 
     # Export Settings:
     file_format: EnumProperty(
@@ -70,6 +66,15 @@ class BatchExportSettings(PropertyGroup):
             ("RENDERABLE", "Render Enabled & Visible", "", 3)
         ],
     )
+    prefix_collection: BoolProperty(
+        name="Prefix Collection Name",
+        description="Adds the containing collection's name to the exported file's name, after the 'prefix'"
+    )
+    full_hierarchy: BoolProperty(
+        name="Full Hierarchy",
+        description="Create Sub-Directories for the Collection and Parent Collections,\nrecreating the hierarchy"
+    )
+
 
     # Format specific options:
     usd_format: EnumProperty(

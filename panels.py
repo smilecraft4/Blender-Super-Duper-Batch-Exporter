@@ -39,6 +39,8 @@ def draw_settings(self, context):
     col.prop(settings, 'limit')
     if 'OBJECT' in settings.mode:
         col.prop(settings, 'prefix_collection')
+    if 'SUBDIR' in settings.mode:
+        col.prop(settings, 'full_hierarchy')
     self.layout.separator()
     col = self.layout.column()
     col.label(text=settings.file_format + " Settings:")

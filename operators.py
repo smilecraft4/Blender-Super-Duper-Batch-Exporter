@@ -83,13 +83,20 @@ class EXPORT_MESH_OT_batch(Operator):
                 for obj in context.selected_objects:
                     obj.select_set(False)
 
-        elif settings.mode == 'COLLECTION_SUBDIRECTORIES':
+        # Functionality for both COLLECTION_SUBDIRECTORIES and COLLECTION_SUBDIR_PARENTS
+        elif 'COLLECTION_SUBDIR' in settings.mode:
             for obj in self.get_filtered_objects(context, settings):
+                if 'PARENT' in settings.mode and obj.parent:
+                    continue  # if it has a parent, skip it for now, it'll be exported when we get to its parent
 
                 # Modify base_dir to add collection, creating directory if necessary
                 sCollection = obj.users_collection[0].name
                 if sCollection != "Scene Collection":
-                    collection_dir = os.path.join(base_dir, sCollection)
+                    if settings.full_hierarchy:
+                        hierarchy = utils.get_collection_hierarchy(sCollection)
+                        collection_dir = os.path.join(base_dir, hierarchy)
+                    else:
+                        collection_dir = os.path.join(base_dir, sCollection)
 
                     # create sub-directory if it doesn't exist
                     if not os.path.exists(collection_dir):
@@ -101,40 +108,13 @@ class EXPORT_MESH_OT_batch(Operator):
                 else: # If object is just in Scene Collection it get's exported to base_dir
                     collection_dir = base_dir
 
-                # Select & Export
+                # Select
                 obj.select_set(True)
-                self.export_selection(obj.name, context, collection_dir)
-
-                # Deselect
-                obj.select_set(False)
-
-        elif settings.mode == 'COLLECTION_SUBDIR_PARENTS':
-            for obj in self.get_filtered_objects(context, settings):
-                if obj.parent:  # if it has a parent, skip it for now, it'll be exported when we get to its parent
-                    continue
-
-                # Modify base_dir to add collection, creating directory if necessary
-                sCollection = obj.users_collection[0].name
-                if sCollection != "Scene Collection":
-                    collection_dir = os.path.join(base_dir, sCollection)
-                    
-                    # create sub-directory if it doesn't exist
-                    if not os.path.exists(collection_dir):
-                        try:
-                            os.makedirs(collection_dir)
-                            print(f"Directory created: {collection_dir}")
-                        except OSError as e:
-                            self.report({'ERROR'}, f"Error creating directory {collection_dir}: {e}")
-                else: # If object is just in Scene Collection it get's exported to base_dir
-                    collection_dir = base_dir
-
-                # Select Obj & Children
-                obj.select_set(True)
-                self.select_children_recursive(obj, context,)
+                if 'PARENT' in settings.mode:
+                    self.select_children_recursive(obj, context)
 
                 # Export
-                if context.selected_objects:
-                    self.export_selection(obj.name, context, collection_dir)
+                self.export_selection(obj.name, context, collection_dir)
 
                 # Deselect
                 for obj in context.selected_objects:
