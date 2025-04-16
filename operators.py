@@ -219,7 +219,14 @@ class EXPORT_MESH_OT_batch(Operator):
                     filtered_objects.append(obj)
             return filtered_objects
         if settings.limit == 'SELECTED':
-            return [obj for obj in context.selected_objects if obj.type in settings.object_types]
+            selection = context.selected_objects
+            filtered_objects = []
+            for obj in objects:
+                obj.select_set(False)
+                if obj in selection:
+                    if obj.type in settings.object_types:
+                        filtered_objects.append(obj)
+            return filtered_objects
         if settings.limit == 'RENDERABLE':
             filtered_objects = []
             for obj in objects:
