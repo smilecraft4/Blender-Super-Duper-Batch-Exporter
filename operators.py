@@ -248,7 +248,7 @@ class EXPORT_MESH_OT_batch(Operator):
             old_scales.append(obj.scale.copy())
 
             # If exporting by parent, don't set child (object that has a parent) transform
-            if settings.mode != "OBJECT_PARENTS" or not obj.parent:
+            if "PARENT" not in settings.mode and not obj.parent:
                 if settings.set_location:
                     obj.location = settings.location
                 if settings.set_rotation:
