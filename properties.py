@@ -196,3 +196,8 @@ class BatchExportSettings(PropertyGroup):
     set_scale: BoolProperty(name="Set Scale", default=False)
     scale: FloatVectorProperty(
         name="Scale", default=(1.0, 1.0, 1.0), subtype="XYZ")
+    
+
+registry = [
+    BatchExportSettings,
+]

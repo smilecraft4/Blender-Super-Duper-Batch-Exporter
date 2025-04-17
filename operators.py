@@ -339,3 +339,8 @@ class EXPORT_MESH_OT_batch(Operator):
 
         print("exported: ", fp)
         self.file_count += 1
+
+
+registry = [
+    EXPORT_MESH_OT_batch,
+]

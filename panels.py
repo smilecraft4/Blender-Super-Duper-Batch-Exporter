@@ -201,3 +201,9 @@ class POPOVER_PT_batch_export(Panel):
             # Debug output
             print(f"Batch Export addon error in POPOVER_PT_batch_export.draw: {e}")
             self.layout.label(text="Error loading UI. Check console for details.")
+
+
+registry = [
+    POPOVER_PT_batch_export,
+    VIEW3D_PT_batch_export,
+]

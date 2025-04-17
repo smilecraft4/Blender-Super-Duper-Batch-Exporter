@@ -35,3 +35,7 @@ class BatchExportPreferences(AddonPreferences):
 
     def draw(self, context):
         self.layout.prop(self, "addon_location")
+
+registry = [
+    BatchExportPreferences,
+]
