@@ -230,24 +230,27 @@ class EXPORT_MESH_OT_batch(Operator):
         old_rotations = []
         old_scales = []
         for obj in context.selected_objects:
+            # Change Itemname If Collection As Prefix
+            if settings.prefix_collection and 'OBJECT' in settings.mode:
+                collection_name = obj.users_collection[0].name
+                if not collection_name == 'Scene Collection':
+                    itemname = "_".join([collection_name, itemname])
+
+            # Save Old Locations
             old_locations.append(obj.location.copy())
             old_rotations.append(obj.rotation_euler.copy())
             old_scales.append(obj.scale.copy())
 
             # If exporting by parent, don't set child (object that has a parent) transform
-            if "PARENT" not in settings.mode and not obj.parent:
+            if "PARENT" in settings.mode and obj.parent:
+                continue
+            else:
                 if settings.set_location:
                     obj.location = settings.location
                 if settings.set_rotation:
                     obj.rotation_euler = settings.rotation
                 if settings.set_scale:
                     obj.scale = settings.scale
-
-            # Export Name If Collection As Prefix
-            if settings.prefix_collection and 'OBJECT' in settings.mode:
-                collection_name = obj.users_collection[0].name
-                if not collection_name == 'Scene Collection':
-                    itemname = "_".join([collection_name, itemname])
 
         # Some exporters only use the active object: #I think this isn't true anymore
         # view_layer.objects.active = obj
