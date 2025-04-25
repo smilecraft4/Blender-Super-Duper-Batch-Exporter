@@ -32,6 +32,8 @@ def draw_settings(self, context):
     col.prop(settings, 'prefix')
     col.prop(settings, 'suffix')
     self.layout.separator()
+
+    # Export Settings
     col = self.layout.column(align=True)
     col.label(text="Export Settings:")
     col.prop(settings, 'file_format')
@@ -42,6 +44,8 @@ def draw_settings(self, context):
     if 'SUBDIR' in settings.mode:
         col.prop(settings, 'full_hierarchy')
     self.layout.separator()
+
+    # Settings
     col = self.layout.column()
     col.label(text=settings.file_format + " Settings:")
     if settings.file_format == 'DAE':
@@ -74,10 +78,14 @@ def draw_settings(self, context):
         self.layout.prop(settings, 'apply_mods')
     self.layout.use_property_split = False
     self.layout.separator()
+
+    # Object Types Filter
     self.layout.label(text="Object Types:")
     grid = self.layout.grid_flow(columns=3, align=True)
     grid.prop(settings, 'object_types')
     self.layout.separator()
+
+    # Transform
     col = self.layout.column(align=True, heading="Transform:")
     col.prop(settings, 'set_location')
     if settings.set_location:
@@ -88,6 +96,17 @@ def draw_settings(self, context):
     col.prop(settings, 'set_scale')
     if settings.set_scale:
         col.prop(settings, 'scale', text="")
+
+    # LOD Creation
+    col = self.layout.column(align=True, heading="Level of Detail:")
+    col.prop(settings, 'create_lod')
+    if settings.create_lod:
+        col.prop(settings, 'lod_count')
+        for count in range(settings.lod_count):
+            prop_name = f'lod{count+1}_ratio' 
+            col.prop(settings, prop_name) 
+
+
 
 # Draws the button and popover dropdown button used in the
 # 3D Viewport Header or Top Bar

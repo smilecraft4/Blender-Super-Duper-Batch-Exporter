@@ -55,6 +55,8 @@ class EXPORT_MESH_OT_batch(Operator):
 
         elif settings.mode == 'PARENT_OBJECTS':
             for obj in self.get_filtered_objects(context, settings):
+                if obj.parent:
+                    continue  # if it has a parent, skip it for now, it'll be exported when we get to its parent
 
                 # Export Selection
                 obj.select_set(True)
@@ -251,6 +253,10 @@ class EXPORT_MESH_OT_batch(Operator):
                     obj.rotation_euler = settings.rotation
                 if settings.set_scale:
                     obj.scale = settings.scale
+
+            # LOD Creation
+            # bpy.context.object["fbx_type"] = "LodGroup"
+            # name = name + '_LOD' + str(lod_count)
 
         # Some exporters only use the active object: #I think this isn't true anymore
         # view_layer.objects.active = obj

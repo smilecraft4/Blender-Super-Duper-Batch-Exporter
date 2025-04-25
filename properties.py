@@ -187,16 +187,46 @@ class BatchExportSettings(PropertyGroup):
     )
 
     # Transform:
-    set_location: BoolProperty(name="Set Location", default=True)
+    set_location: BoolProperty(name="Set Location", default=False)
     location: FloatVectorProperty(name="Location", default=(
         0.0, 0.0, 0.0), subtype="TRANSLATION")
-    set_rotation: BoolProperty(name="Set Rotation (XYZ Euler)", default=True)
+    set_rotation: BoolProperty(name="Set Rotation (XYZ Euler)", default=False)
     rotation: FloatVectorProperty(
         name="Rotation", default=(0.0, 0.0, 0.0), subtype="EULER")
     set_scale: BoolProperty(name="Set Scale", default=False)
     scale: FloatVectorProperty(
         name="Scale", default=(1.0, 1.0, 1.0), subtype="XYZ")
     
+    # LOD Creation:
+    create_lod: BoolProperty(
+        name="Create LOD", default=False,
+        description="Export Levels of Details for game engines",
+    )
+    lod_count: IntProperty(
+        name="Number of LODs",
+        description="How many levels of detail to export",
+        default=4, min=1, max=4,
+    )
+    lod01_ratio: FloatProperty(
+        name="LOD1 Ratio", 
+        description="Decimate factor for LOD 1",
+        default=0.80, min=0.0, max=1.0, subtype="FACTOR"
+    )
+    lod02_ratio: FloatProperty(
+        name="LOD1 Ratio", 
+        description="Decimate factor for LOD 2",
+        default=0.50, min=0.0, max=1.0, subtype="FACTOR"
+    )
+    lod03_ratio: FloatProperty(
+        name="LOD1 Ratio", 
+        description="Decimate factor for LOD 3",
+        default=0.20, min=0.0, max=1.0, subtype="FACTOR"
+    )
+    lod04_ratio: FloatProperty(
+        name="LOD1 Ratio", 
+        description="Decimate factor for LOD 4",
+        default=0.10, min=0.0, max=1.0, subtype="FACTOR"
+    )
 
 registry = [
     BatchExportSettings,
