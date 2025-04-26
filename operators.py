@@ -232,12 +232,6 @@ class EXPORT_MESH_OT_batch(Operator):
         old_rotations = []
         old_scales = []
         for obj in context.selected_objects:
-            # Change Itemname If Collection As Prefix
-            if settings.prefix_collection and 'OBJECT' in settings.mode:
-                collection_name = obj.users_collection[0].name
-                if not collection_name == 'Scene Collection':
-                    itemname = "_".join([collection_name, itemname])
-
             # Save Old Locations
             old_locations.append(obj.location.copy())
             old_rotations.append(obj.rotation_euler.copy())
@@ -254,7 +248,34 @@ class EXPORT_MESH_OT_batch(Operator):
                 if settings.set_scale:
                     obj.scale = settings.scale
 
+            # Change Itemname If Collection As Prefix
+            if settings.prefix_collection and 'OBJECT' in settings.mode:
+                collection_name = obj.users_collection[0].name
+                if not collection_name == 'Scene Collection':
+                    itemname = "_".join([collection_name, itemname])
+
             # LOD Creation
+            if settings.create_lod and settings.file_format == 'FBX':
+                # Create a new empty object
+                LODparent = bpy.data.objects.new("Empty_Name", None)
+                bpy.context.collection.objects.link(LODparent)
+                name = obj.name
+                obj.name = name + '_LOD0'
+                LODparent.name = name
+                LODparent["fbx_type"] = "LodGroup"
+                obj.parent = LODparent
+
+                for lodcount in range½(settings.lod_count):
+                    lod = obj.copy()
+                    lod.data = lod.data.copy() # linked = false
+                    lod.name = name + f"_LOD{lodcount+1}"
+                    lod.parent = LODparent
+
+                    # Decimation
+                    decimate_mod = lod.modifiers.new('lodding', type='DECIMATE')
+                    decimate_mod.ratio = settings.lod
+
+                    bpy.data.objects.
             # bpy.context.object["fbx_type"] = "LodGroup"
             # name = name + '_LOD' + str(lod_count)
 

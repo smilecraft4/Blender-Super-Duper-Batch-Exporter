@@ -98,14 +98,14 @@ def draw_settings(self, context):
         col.prop(settings, 'scale', text="")
 
     # LOD Creation
-    col = self.layout.column(align=True, heading="Level of Detail:")
-    col.prop(settings, 'create_lod')
-    if settings.create_lod:
-        col.prop(settings, 'lod_count')
-        for count in range(settings.lod_count):
-            prop_name = f'lod{count+1}_ratio' 
-            col.prop(settings, prop_name) 
-
+    if settings.file_format == 'FBX':
+        col = self.layout.column(align=True, heading="Level of Detail:")
+        col.prop(settings, 'create_lod')
+        if settings.create_lod:
+            col.prop(settings, 'lod_count')
+            for count in range(settings.lod_count):
+                prop_name = f'lod{count+1}_ratio' 
+                col.prop(settings, prop_name)
 
 
 # Draws the button and popover dropdown button used in the
