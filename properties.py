@@ -207,22 +207,22 @@ class BatchExportSettings(PropertyGroup):
         description="How many levels of detail to export",
         default=4, min=1, max=4,
     )
-    lod01_ratio: FloatProperty(
+    lod1_ratio: FloatProperty(
         name="LOD1 Ratio", 
         description="Decimate factor for LOD 1",
         default=0.80, min=0.0, max=1.0, subtype="FACTOR"
     )
-    lod02_ratio: FloatProperty(
+    lod2_ratio: FloatProperty(
         name="LOD1 Ratio", 
         description="Decimate factor for LOD 2",
         default=0.50, min=0.0, max=1.0, subtype="FACTOR"
     )
-    lod03_ratio: FloatProperty(
+    lod3_ratio: FloatProperty(
         name="LOD1 Ratio", 
         description="Decimate factor for LOD 3",
         default=0.20, min=0.0, max=1.0, subtype="FACTOR"
     )
-    lod04_ratio: FloatProperty(
+    lod4_ratio: FloatProperty(
         name="LOD1 Ratio", 
         description="Decimate factor for LOD 4",
         default=0.10, min=0.0, max=1.0, subtype="FACTOR"

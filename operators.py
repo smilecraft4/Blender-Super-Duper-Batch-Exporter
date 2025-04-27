@@ -264,23 +264,24 @@ class EXPORT_MESH_OT_batch(Operator):
                 LODparent.name = name
                 LODparent["fbx_type"] = "LodGroup"
                 obj.parent = LODparent
+                LODparent.select_set(True)
 
-                for lodcount in range½(settings.lod_count):
+                for lodcount in range(settings.lod_count):
                     lod = obj.copy()
                     lod.data = lod.data.copy() # linked = false
                     lod.name = name + f"_LOD{lodcount+1}"
                     lod.parent = LODparent
+                    lod.select_set(True)
 
                     # Decimation
                     decimate_mod = lod.modifiers.new('lodding', type='DECIMATE')
-                    decimate_mod.ratio = settings.lod
+                    ratio_attr_name = f"lod{lodcount+1}_ratio"
+                    decimate_mod.ratio = getattr(settings, ratio_attr_name)
+                    
+                    #bpy.ops.object.modifier_apply(modifier=decimate_mod.name)
+                settings.apply_mods = True
+                settings.object_types.EMPTY = True
 
-                    bpy.data.objects.
-            # bpy.context.object["fbx_type"] = "LodGroup"
-            # name = name + '_LOD' + str(lod_count)
-
-        # Some exporters only use the active object: #I think this isn't true anymore
-        # view_layer.objects.active = obj
 
         prefix = settings.prefix
         suffix = settings.suffix
@@ -350,6 +351,12 @@ class EXPORT_MESH_OT_batch(Operator):
             options["use_selection"] = True
             options["use_mesh_modifiers"] = settings.apply_mods
             bpy.ops.export_scene.fbx(**options)
+
+            # LOD De-Creation
+            if settings.create_lod:
+                for obj in context.selected_objects:
+                    if '_LOD0' in obj.name:
+                        
 
         elif settings.file_format == "glTF":
             options = utils.load_operator_preset(
