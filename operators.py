@@ -256,14 +256,20 @@ class EXPORT_MESH_OT_batch(Operator):
 
             # LOD Creation
             if settings.create_lod and settings.file_format == 'FBX':
+                LODobjects = []
                 # Create a new empty object
                 LODparent = bpy.data.objects.new("Empty_Name", None)
-                bpy.context.collection.objects.link(LODparent)
+                objColobj = obj.users_collection[0].objects
+                objColobj.link(LODparent)
                 name = obj.name
                 obj.name = name + '_LOD0'
                 LODparent.name = name
                 LODparent["fbx_type"] = "LodGroup"
+                if obj.parent:
+                    LODparent.parent = obj.parent
+
                 obj.parent = LODparent
+                LODobjects.append(LODparent)
                 LODparent.select_set(True)
 
                 for lodcount in range(settings.lod_count):
@@ -271,6 +277,8 @@ class EXPORT_MESH_OT_batch(Operator):
                     lod.data = lod.data.copy() # linked = false
                     lod.name = name + f"_LOD{lodcount+1}"
                     lod.parent = LODparent
+                    objColobj.link(lod)
+                    LODobjects.append(lod)
                     lod.select_set(True)
 
                     # Decimation
@@ -280,7 +288,7 @@ class EXPORT_MESH_OT_batch(Operator):
                     
                     #bpy.ops.object.modifier_apply(modifier=decimate_mod.name)
                 settings.apply_mods = True
-                settings.object_types.EMPTY = True
+                # THIS DOESNT WORK settings.object_types.EMPTY = True
 
 
         prefix = settings.prefix
@@ -354,8 +362,11 @@ class EXPORT_MESH_OT_batch(Operator):
 
             # LOD De-Creation
             if settings.create_lod:
+                for lod in LODobjects:
+                    bpy.data.objects.remove(lod, do_unlink=True)
                 for obj in context.selected_objects:
                     if '_LOD0' in obj.name:
+                        obj.name = obj.name[0:-5]
                         
 
         elif settings.file_format == "glTF":

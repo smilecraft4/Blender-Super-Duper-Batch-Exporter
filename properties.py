@@ -1,7 +1,7 @@
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import (BoolProperty, IntProperty, EnumProperty, StringProperty, 
-                       FloatVectorProperty)
+                       FloatVectorProperty, FloatProperty)
 from .utils import get_operator_presets, get_preset_index, preset_enum_items_refs
 
 # Groups together all the addon settings that are saved in each .blend file
@@ -208,22 +208,22 @@ class BatchExportSettings(PropertyGroup):
         default=4, min=1, max=4,
     )
     lod1_ratio: FloatProperty(
-        name="LOD1 Ratio", 
+        name="LOD 1 Ratio", 
         description="Decimate factor for LOD 1",
         default=0.80, min=0.0, max=1.0, subtype="FACTOR"
     )
     lod2_ratio: FloatProperty(
-        name="LOD1 Ratio", 
+        name="LOD 2 Ratio", 
         description="Decimate factor for LOD 2",
         default=0.50, min=0.0, max=1.0, subtype="FACTOR"
     )
     lod3_ratio: FloatProperty(
-        name="LOD1 Ratio", 
+        name="LOD 3 Ratio", 
         description="Decimate factor for LOD 3",
         default=0.20, min=0.0, max=1.0, subtype="FACTOR"
     )
     lod4_ratio: FloatProperty(
-        name="LOD1 Ratio", 
+        name="LOD 4 Ratio", 
         description="Decimate factor for LOD 4",
         default=0.10, min=0.0, max=1.0, subtype="FACTOR"
     )
