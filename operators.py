@@ -54,8 +54,10 @@ class EXPORT_MESH_OT_batch(Operator):
                 obj.select_set(False)
 
         elif settings.mode == 'PARENT_OBJECTS':
-            for obj in self.get_filtered_objects(context, settings):
-                if obj.parent:
+            exportObjects = self.get_filtered_objects(context, settings)
+
+            for obj in exportObjects:
+                if obj.parent in exportObjects:
                     continue  # if it has a parent, skip it for now, it'll be exported when we get to its parent
 
                 # Export Selection
@@ -87,8 +89,10 @@ class EXPORT_MESH_OT_batch(Operator):
 
         # Functionality for both COLLECTION_SUBDIRECTORIES and COLLECTION_SUBDIR_PARENTS
         elif 'COLLECTION_SUBDIR' in settings.mode:
-            for obj in self.get_filtered_objects(context, settings):
-                if 'PARENT' in settings.mode and obj.parent:
+            exportobjects = self.get_filtered_objects(context, settings)
+
+            for obj in exportobjects:
+                if 'PARENT' in settings.mode and obj.parent in exportobjects:
                     continue  # if it has a parent, skip it for now, it'll be exported when we get to its parent
 
                 # Modify base_dir to add collection, creating directory if necessary
@@ -228,17 +232,23 @@ class EXPORT_MESH_OT_batch(Operator):
     def export_selection(self, itemname, context, base_dir):
         settings = context.scene.batch_export
         # save the transform to be reset later:
+        old_parent = []
         old_locations = []
         old_rotations = []
         old_scales = []
+        
+        # Extra objects for LOD export store for later removal
+        LODobjects = []
+
         for obj in context.selected_objects:
             # Save Old Locations
+            old_parent.append(obj.parent)
             old_locations.append(obj.location.copy())
             old_rotations.append(obj.rotation_euler.copy())
             old_scales.append(obj.scale.copy())
 
             # If exporting by parent, don't set child (object that has a parent) transform
-            if "PARENT" in settings.mode and obj.parent:
+            if "PARENT" in settings.mode and obj.parent in context.selected_objects:
                 continue
             else:
                 if settings.set_location:
@@ -256,28 +266,32 @@ class EXPORT_MESH_OT_batch(Operator):
 
             # LOD Creation
             if settings.create_lod and settings.file_format == 'FBX':
-                LODobjects = []
-                # Create a new empty object
-                LODparent = bpy.data.objects.new("Empty_Name", None)
-                objColobj = obj.users_collection[0].objects
-                objColobj.link(LODparent)
+                # Create a new parent transform object
+                lodParent = bpy.data.objects.new("Empty_Name", None)
+                obj_CollectionObjs = obj.users_collection[0].objects
+                obj_CollectionObjs.link(lodParent)
                 name = obj.name
                 obj.name = name + '_LOD0'
-                LODparent.name = name
-                LODparent["fbx_type"] = "LodGroup"
+                lodParent.location = obj.location
+                lodParent.rotation_quaternion = obj.rotation_quaternion
+                lodParent.name = name
+                lodParent["fbx_type"] = "LodGroup"
                 if obj.parent:
-                    LODparent.parent = obj.parent
+                    lodParent.parent = obj.parent
 
-                obj.parent = LODparent
-                LODobjects.append(LODparent)
-                LODparent.select_set(True)
 
+                obj.parent = lodParent
+                obj.location = (0,0,0) # zero to parent
+                LODobjects.append(lodParent)
+                lodParent.select_set(True)
+
+                # Loop over and create each LOD object
                 for lodcount in range(settings.lod_count):
                     lod = obj.copy()
                     lod.data = lod.data.copy() # linked = false
                     lod.name = name + f"_LOD{lodcount+1}"
-                    lod.parent = LODparent
-                    objColobj.link(lod)
+                    lod.parent = lodParent
+                    obj_CollectionObjs.link(lod)
                     LODobjects.append(lod)
                     lod.select_set(True)
 
@@ -380,6 +394,7 @@ class EXPORT_MESH_OT_batch(Operator):
         # Reset the transform to what it was before
         i = 0
         for obj in context.selected_objects:
+            obj.parent = old_parent[i]
             obj.location = old_locations[i]
             obj.rotation_euler = old_rotations[i]
             obj.scale = old_scales[i]
