@@ -232,17 +232,17 @@ class EXPORT_MESH_OT_batch(Operator):
     def export_selection(self, itemname, context, base_dir):
         settings = context.scene.batch_export
         # save the transform to be reset later:
-        old_parent = []
         old_locations = []
         old_rotations = []
         old_scales = []
         
         # Extra objects for LOD export store for later removal
-        LODobjects = []
+        preLodObjects = []
+        lodObjects = []
 
-        for obj in context.selected_objects:
+        objectsloop = context.selected_objects
+        for obj in objectsloop:
             # Save Old Locations
-            old_parent.append(obj.parent)
             old_locations.append(obj.location.copy())
             old_rotations.append(obj.rotation_euler.copy())
             old_scales.append(obj.scale.copy())
@@ -265,25 +265,34 @@ class EXPORT_MESH_OT_batch(Operator):
                     itemname = "_".join([collection_name, itemname])
 
             # LOD Creation
-            if settings.create_lod and settings.file_format == 'FBX':
-                # Create a new parent transform object
-                lodParent = bpy.data.objects.new("Empty_Name", None)
+            if settings.create_lod and settings.file_format == 'FBX' and obj.type == 'MESH':
+                # Save obj info and backup
                 obj_CollectionObjs = obj.users_collection[0].objects
-                obj_CollectionObjs.link(lodParent)
                 name = obj.name
-                obj.name = name + '_LOD0'
+                obj.name = name + '_preLOD'
+                preLodObjects.append(obj)
+                obj.select_set(False)
+
+                # Setup LOD parent object
+                lodParent = bpy.data.objects.new("Empty_Name", None)
+                obj_CollectionObjs.link(lodParent)
                 lodParent.location = obj.location
                 lodParent.rotation_quaternion = obj.rotation_quaternion
                 lodParent.name = name
                 lodParent["fbx_type"] = "LodGroup"
                 if obj.parent:
                     lodParent.parent = obj.parent
-
-
-                obj.parent = lodParent
-                obj.location = (0,0,0) # zero to parent
-                LODobjects.append(lodParent)
+                lodObjects.append(lodParent)
                 lodParent.select_set(True)
+
+                # Create LOD0 copy
+                lod = obj.copy()
+                lod.data = lod.data.copy() # linked = false
+                lod.name = name + f"_LOD0"
+                lod.parent = lodParent
+                obj_CollectionObjs.link(lod)
+                lodObjects.append(lod)
+                lod.select_set(True)
 
                 # Loop over and create each LOD object
                 for lodcount in range(settings.lod_count):
@@ -292,7 +301,7 @@ class EXPORT_MESH_OT_batch(Operator):
                     lod.name = name + f"_LOD{lodcount+1}"
                     lod.parent = lodParent
                     obj_CollectionObjs.link(lod)
-                    LODobjects.append(lod)
+                    lodObjects.append(lod)
                     lod.select_set(True)
 
                     # Decimation
@@ -376,11 +385,11 @@ class EXPORT_MESH_OT_batch(Operator):
 
             # LOD De-Creation
             if settings.create_lod:
-                for lod in LODobjects:
+                for lod in lodObjects:
                     bpy.data.objects.remove(lod, do_unlink=True)
-                for obj in context.selected_objects:
-                    if '_LOD0' in obj.name:
-                        obj.name = obj.name[0:-5]
+                for obj in preLodObjects:
+                    if '_preLOD' in obj.name:
+                        obj.name = obj.name[0:-7]
                         
 
         elif settings.file_format == "glTF":
@@ -394,7 +403,6 @@ class EXPORT_MESH_OT_batch(Operator):
         # Reset the transform to what it was before
         i = 0
         for obj in context.selected_objects:
-            obj.parent = old_parent[i]
             obj.location = old_locations[i]
             obj.rotation_euler = old_rotations[i]
             obj.scale = old_scales[i]
