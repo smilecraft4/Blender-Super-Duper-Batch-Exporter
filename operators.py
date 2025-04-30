@@ -286,17 +286,18 @@ class EXPORT_MESH_OT_batch(Operator):
                 lodParent.select_set(True)
 
                 # Create LOD0 copy
-                lod = obj.copy()
-                lod.data = lod.data.copy() # linked = false
-                lod.name = name + f"_LOD0"
-                lod.parent = lodParent
-                obj_CollectionObjs.link(lod)
-                lodObjects.append(lod)
-                lod.select_set(True)
+                lod0 = obj.copy()
+                lod0.data = lod0.data.copy() # linked = false
+                lod0.name = name + f"_LOD0"
+                lod0.parent = lodParent
+                lod0.location = (0,0,0)
+                obj_CollectionObjs.link(lod0)
+                lodObjects.append(lod0)
+                lod0.select_set(True)
 
                 # Loop over and create each LOD object
                 for lodcount in range(settings.lod_count):
-                    lod = obj.copy()
+                    lod = lod0.copy()
                     lod.data = lod.data.copy() # linked = false
                     lod.name = name + f"_LOD{lodcount+1}"
                     lod.parent = lodParent
