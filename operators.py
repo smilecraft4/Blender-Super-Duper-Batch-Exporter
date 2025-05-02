@@ -80,8 +80,23 @@ class EXPORT_MESH_OT_batch(Operator):
                     if not obj in exportobjects:
                         continue
                     obj.select_set(True)
+                
                 if context.selected_objects:
-                    self.export_selection(col.name, context, base_dir)
+                    if settings.full_hierarchy:
+                        if sCollection != "Scene Collection":
+                                hierarchy = utils.get_collection_hierarchy(col.name)
+                                collection_dir = os.path.dirname(hierarchy)
+                                collection_dir = os.path.join(base_dir, collection_dir)
+                                
+                                if not os.path.exists(collection_dir):
+                                    try:
+                                        os.makedirs(collection_dir)
+                                        print(f"Directory created: {collection_dir}")
+                                    except OSError as e:
+                                        self.report({'ERROR'}, f"Error creating directory {collection_dir}: {e}")
+                        else: # If object is just in Scene Collection it get's exported to base_dir
+                            collection_dir = base_dir
+                self.export_selection(col.name, context, collection_dir)
 
                 # Deselect
                 for obj in context.selected_objects:
