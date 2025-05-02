@@ -73,7 +73,7 @@ class EXPORT_MESH_OT_batch(Operator):
 
         elif settings.mode == 'COLLECTIONS':
             exportobjects = self.get_filtered_objects(context, settings)
-
+            
             for col in bpy.data.collections.values():
                 # Check if collection objects are in filtered objects
                 for obj in col.objects:
